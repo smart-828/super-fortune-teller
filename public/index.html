@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Fortune Teller · 命運之鏡</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+TC:wght@300;400;600&family=Cinzel:wght@400;600&display=swap');
+
+  :root {
+    --void: #0a0812;
+    --deep: #100d1a;
+    --gold: #c9a84c;
+    --gold-dim: #8a6e2f;
+    --violet: #7c4dff;
+    --star: #e8e0f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--star);
+    font-family: 'Noto Serif TC', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 680px; margin: 0 auto;
+    padding: 40px 24px 80px;
+    display: flex; flex-direction: column; align-items: center; gap: 36px;
+  }
+
+  /* Header */
+  .header { text-align: center; }
+  .header h1 {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 30px rgba(201,168,76,0.6);
+    line-height: 1.4;
+  }
+  .header .subtitle {
+    font-size: 0.8rem;
+    color: rgba(232,224,240,0.4);
+    margin-top: 8px;
+    letter-spacing: 0.35em;
+  }
+  .divider {
+    display: flex; align-items: center; gap: 12px; margin-top: 18px; width: 100%;
+  }
+  .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+  .divider-symbol { color: var(--gold); font-size: 1rem; }
+
+  /* Crystal */
+  .crystal-wrap {
+    position: relative; width: 180px; height: 180px;
+    cursor: pointer; user-select: none;
+  }
+  .crystal {
+    width: 180px; height: 180px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%,
+      rgba(180,160,255,0.5) 0%, rgba(80,40,180,0.4) 40%, rgba(10,8,18,0.9) 100%);
+    border: 1px solid rgba(201,168,76,0.3);
+    box-shadow: 0 0 40px rgba(124,77,255,0.4), 0 0 80px rgba(124,77,255,0.15), inset 0 0 40px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .crystal:hover { transform: scale(1.05); }
+  .crystal.glowing {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 60px rgba(124,77,255,0.8), 0 0 120px rgba(201,168,76,0.4), inset 0 0 40px rgba(124,77,255,0.3); }
+    50% { box-shadow: 0 0 90px rgba(124,77,255,1), 0 0 160px rgba(201,168,76,0.6), inset 0 0 60px rgba(124,77,255,0.5); }
+  }
+  .crystal-inner { font-size: 2.8rem; animation: floatSymbol 4s ease-in-out infinite; filter: drop-shadow(0 0 8px rgba(201,168,76,0.8)); }
+  @keyframes floatSymbol {
+    0%,100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+  }
+  .crystal-shine {
+    position: absolute; width: 50px; height: 50px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+    top: 20px; left: 28px;
+  }
+  .crystal-base {
+    width: 80px; height: 12px;
+    background: linear-gradient(180deg, rgba(201,168,76,0.4) 0%, transparent 100%);
+    border-radius: 50%; filter: blur(4px); margin-top: -6px;
+  }
+  .crystal-hint { margin-top: 12px; font-size: 0.72rem; color: rgba(232,224,240,0.35); letter-spacing: 0.2em; }
+
+  /* Particles */
+  .particle {
+    position: fixed; border-radius: 50%; pointer-events: none;
+    animation: particleFly 1.2s ease-out forwards; z-index: 999;
+  }
+  @keyframes particleFly {
+    0% { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+
+  /* Zodiac */
+  .section-label { font-size: 0.7rem; letter-spacing: 0.35em; color: var(--gold-dim); text-align: center; margin-bottom: 12px; }
+  .zodiac-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; width: 100%; }
+  .zodiac-btn {
+    background: rgba(124,77,255,0.07); border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 8px; padding: 10px 4px; cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--star);
+  }
+  .zodiac-btn:hover { background: rgba(124,77,255,0.2); border-color: rgba(201,168,76,0.4); }
+  .zodiac-btn.active { background: rgba(124,77,255,0.3); border-color: var(--gold); }
+  .zodiac-emoji { font-size: 1.3rem; }
+  .zodiac-name { font-size: 0.62rem; color: rgba(232,224,240,0.6); }
+
+  /* Question */
+  .question-box {
+    width: 100%; background: rgba(16,13,26,0.8);
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 12px;
+    color: var(--star); font-family: 'Noto Serif TC', serif;
+    font-size: 0.95rem; padding: 16px 18px; resize: none; min-height: 90px;
+    transition: border-color 0.3s; line-height: 1.7;
+  }
+  .question-box:focus { outline: none; border-color: rgba(124,77,255,0.6); }
+  .question-box::placeholder { color: rgba(232,224,240,0.25); }
+
+  /* Button */
+  .reveal-btn {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(124,77,255,0.3), rgba(61,36,128,0.5));
+    border: 1px solid rgba(201,168,76,0.4); border-radius: 12px;
+    color: var(--gold); font-family: 'Cinzel', serif;
+    font-size: 0.95rem; letter-spacing: 0.15em; padding: 16px;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .reveal-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(124,77,255,0.5), rgba(61,36,128,0.7));
+    border-color: var(--gold); box-shadow: 0 0 20px rgba(201,168,76,0.2);
+  }
+  .reveal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Loading */
+  .loading-wrap { display: none; width: 100%; align-items: center; justify-content: center; gap: 12px; padding: 24px; color: rgba(201,168,76,0.6); font-size: 0.85rem; letter-spacing: 0.2em; }
+  .loading-wrap.visible { display: flex; }
+  .loading-orbs { display: flex; gap: 6px; }
+  .orb { width: 8px; height: 8px; border-radius: 50%; background: var(--violet); animation: orbBounce 1.2s ease-in-out infinite; }
+  .orb:nth-child(2) { animation-delay: 0.2s; background: var(--gold); }
+  .orb:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes orbBounce {
+    0%,100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-10px); opacity: 1; }
+  }
+
+  /* Response */
+  .response-card {
+    width: 100%; display: none;
+    background: linear-gradient(145deg, rgba(16,13,26,0.95), rgba(30,15,60,0.9));
+    border: 1px solid rgba(201,168,76,0.25); border-radius: 16px;
+    padding: 28px 24px; box-shadow: 0 0 40px rgba(124,77,255,0.15);
+    animation: cardReveal 0.6s ease-out;
+  }
+  @keyframes cardReveal {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .response-card.visible { display: block; }
+  .response-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .response-icon { font-size: 1.5rem; }
+  .response-title { font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 0.2em; color: var(--gold); }
+  .response-text { font-size: 0.95rem; line-height: 1.95; color: rgba(232,224,240,0.9); white-space: pre-wrap; }
+  .response-footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(201,168,76,0.12); font-size: 0.72rem; color: rgba(232,224,240,0.25); text-align: center; letter-spacing: 0.15em; }
+
+  /* Error */
+  .error-msg { color: #ff6b6b; font-size: 0.82rem; text-align: center; padding: 12px; background: rgba(255,107,107,0.08); border-radius: 8px; border: 1px solid rgba(255,107,107,0.2); width: 100%; display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Super Fortune Teller</h1>
+    <div class="subtitle">命運之鏡 · ORACLE · DIVINATION</div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-symbol">✦</span>
+      <div class="divider-line"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="crystal-wrap" onclick="onCrystalClick(event)">
+      <div class="crystal" id="crystal">
+        <div class="crystal-shine"></div>
+        <div class="crystal-inner" id="crystalSymbol">🔮</div>
+      </div>
+    </div>
+    <div class="crystal-base"></div>
+    <div class="crystal-hint">觸碰水晶球 · 感受命運</div>
+  </div>
+
+  <div style="width:100%">
+    <div class="section-label">選擇你的星座 · 可略過</div>
+    <div class="zodiac-grid">
+      <button class="zodiac-btn" data-sign="白羊座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♈</span><span class="zodiac-name">白羊</span></button>
+      <button class="zodiac-btn" data-sign="金牛座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♉</span><span class="zodiac-name">金牛</span></button>
+      <button class="zodiac-btn" data-sign="雙子座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♊</span><span class="zodiac-name">雙子</span></button>
+      <button class="zodiac-btn" data-sign="巨蟹座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♋</span><span class="zodiac-name">巨蟹</span></button>
+      <button class="zodiac-btn" data-sign="獅子座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♌</span><span class="zodiac-name">獅子</span></button>
+      <button class="zodiac-btn" data-sign="處女座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♍</span><span class="zodiac-name">處女</span></button>
+      <button class="zodiac-btn" data-sign="天秤座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♎</span><span class="zodiac-name">天秤</span></button>
+      <button class="zodiac-btn" data-sign="天蠍座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♏</span><span class="zodiac-name">天蠍</span></button>
+      <button class="zodiac-btn" data-sign="射手座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♐</span><span class="zodiac-name">射手</span></button>
+      <button class="zodiac-btn" data-sign="摩羯座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♑</span><span class="zodiac-name">摩羯</span></button>
+      <button class="zodiac-btn" data-sign="水瓶座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♒</span><span class="zodiac-name">水瓶</span></button>
+      <button class="zodiac-btn" data-sign="雙魚座" onclick="selectZodiac(this)"><span class="zodiac-emoji">♓</span><span class="zodiac-name">雙魚</span></button>
+    </div>
+  </div>
+
+  <div style="width:100%">
+    <div class="section-label">向命運之鏡提問</div>
+    <textarea class="question-box" id="questionInput"
+      placeholder="例如：我今年的感情運如何？&#10;工作上有甚麼要注意？&#10;這個決定係咪正確？"></textarea>
+  </div>
+
+  <button class="reveal-btn" id="revealBtn" onclick="doReveal()">✦ 揭示命運 ✦</button>
+
+  <div class="loading-wrap" id="loadingWrap">
+    <div class="loading-orbs"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+    <span>命運之鏡正在凝視...</span>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="response-card" id="responseCard">
+    <div class="response-header">
+      <span class="response-icon">🌙</span>
+      <span class="response-title">ORACLE SPEAKS · 神諭</span>
+    </div>
+    <div class="response-text" id="responseText"></div>
+    <div class="response-footer">此乃命運之鏡所示 · 一切皆為娛樂參考</div>
+  </div>
+
+</div>
+
+<script>
+// Starfield
+(function() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  function initStars() {
+    stars = Array.from({length: 160}, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.3, o: Math.random() * 0.7 + 0.1,
+      speed: Math.random() * 0.4 + 0.1, phase: Math.random() * Math.PI * 2
+    }));
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      const opacity = s.o * (0.6 + 0.4 * Math.sin(t * 0.001 * s.speed + s.phase));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,224,240,${opacity})`; ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', () => { resize(); initStars(); });
+  resize(); initStars(); requestAnimationFrame(draw);
+})();
+
+// State
+let selectedZodiac = '';
+const symbols = ['🔮','🌙','⭐','✨','🌟','💫','🌀','🔯'];
+let symIdx = 0;
+
+function selectZodiac(btn) {
+  document.querySelectorAll('.zodiac-btn').forEach(b => b.classList.remove('active'));
+  if (selectedZodiac === btn.dataset.sign) { selectedZodiac = ''; return; }
+  btn.classList.add('active');
+  selectedZodiac = btn.dataset.sign;
+}
+
+function onCrystalClick(e) {
+  const crystal = document.getElementById('crystal');
+  crystal.classList.add('glowing');
+  setTimeout(() => crystal.classList.remove('glowing'), 2000);
+  symIdx = (symIdx + 1) % symbols.length;
+  document.getElementById('crystalSymbol').textContent = symbols[symIdx];
+  spawnParticles(e.clientX, e.clientY);
+}
+
+function spawnParticles(cx, cy) {
+  const colors = ['#c9a84c','#7c4dff','#e8e0f0','#ff9ff3','#54a0ff'];
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 3;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 120 + 40;
+    p.style.cssText = `width:${size}px;height:${size}px;left:${cx}px;top:${cy}px;background:${colors[Math.floor(Math.random()*colors.length)]};--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;animation-duration:${0.8+Math.random()*0.6}s;`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+async function doReveal() {
+  const question = document.getElementById('questionInput').value.trim();
+  if (!question) { showError('請先向命運之鏡提問...'); return; }
+
+  hideError();
+  setLoading(true);
+
+  try {
+    const resp = await fetch('/api/oracle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, zodiac: selectedZodiac })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '未知錯誤');
+
+    showResponse(data.result);
+
+    const crystal = document.getElementById('crystal');
+    crystal.classList.add('glowing');
+    setTimeout(() => crystal.classList.remove('glowing'), 3000);
+    const rect = document.getElementById('crystal').getBoundingClientRect();
+    spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+
+  } catch (e) {
+    showError('占卜失敗：' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  document.getElementById('loadingWrap').className = 'loading-wrap' + (on ? ' visible' : '');
+  document.getElementById('revealBtn').disabled = on;
+  if (on) document.getElementById('responseCard').classList.remove('visible');
+}
+function showResponse(text) {
+  document.getElementById('responseText').textContent = text;
+  document.getElementById('responseCard').classList.add('visible');
+  document.getElementById('responseCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.style.display = 'block';
+}
+function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+</script>
+</body>
+</html>
